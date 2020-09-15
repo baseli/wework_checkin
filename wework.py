@@ -1,75 +1,77 @@
 import datetime
+import logging
 import os
 import random
 import sqlite3
 import time
 
 import requests
-import schedule
 from uiautomator import device as d
 
 
 def init():
     # 点亮屏幕
-    os.popen("adb shell input keyevent 224")
+    os.popen("/usr/local/bin/adb shell input keyevent 224")
     time.sleep(1)
 
     # 滑动屏幕
-    os.popen("adb shell input swipe 300 2000 300 500")
+    os.popen("/usr/local/bin/adb shell input swipe 300 2000 300 500")
     time.sleep(1)
 
     # 返回桌面
-    os.popen("adb shell input keyevent 3")
+    os.popen("/usr/local/bin/adb shell input keyevent 3")
 
 
 def start_work():
     time.sleep(3)
     # 打开企业微信
-    os.popen("adb shell am start com.tencent.wework/com.tencent.wework.launch.LaunchSplashActivity")
+    os.popen("/usr/local/bin/adb shell am start com.tencent.wework/com.tencent.wework.launch.LaunchSplashActivity")
     time.sleep(5)
 
-    d(text=u"工作台").click()
-    time.sleep(1)
-
-    os.popen("adb shell input swipe 300 2000 300 500")
-    time.sleep(2)
-
-    d(resourceId='com.tencent.wework:id/es3').click()
+    msg = d(resourceId="com.tencent.wework:id/h0x").info['text']
     time.sleep(3)
 
-    msg = '打卡失败，不在范围内'
-    if '在打卡范围内' in d(resourceId="com.tencent.wework:id/ij").info['text']:
-        text = d(resourceId="com.tencent.wework:id/ar0").info['text']
-        if text == '上班打卡':
-            d(resourceId="com.tencent.wework:id/ar0").click()
-            time.sleep(2)
+    if d(resourceId="com.tencent.wework:id/e5c").info['text'] != '打卡':
+        logging.debug('auto work in error')
+        d(text='工作台').click()
+        time.sleep(2)
 
-            if d(text=u"上班·正常").info['text'] == "上班·正常":
-                in_time = d(className="android.widget.TextView", resourceId="com.tencent.wework:id/mp").info['text']
-                print("打卡时间：", in_time)
-                msg = "上班打卡成功: 时间：" + in_time + " 日志时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            else:
-                msg = "打卡失败:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-        else:
-            d(resourceId="com.tencent.wework:id/ar0").click()
-            time.sleep(2)
+        os.popen("/usr/local/bin/adb shell input swipe 300 2000 300 500")
+        time.sleep(1)
 
-            if d(text=u"下班·正常").info['text'] == "下班·正常":
-                in_time = d(className="android.widget.TextView", resourceId="com.tencent.wework:id/mp").info['text']
-                msg = "下班打卡成功: 时间：" + in_time + " 日志时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        msg = '打卡失败，不在范围内'
+        if '在打卡范围内' in d(resourceId="com.tencent.wework:id/ij").info['text']:
+            text = d(resourceId="com.tencent.wework:id/ar0").info['text']
+            if text == '上班打卡':
+                d(resourceId="com.tencent.wework:id/ar0").click()
+                time.sleep(2)
+
+                if d(text=u"上班·正常").info['text'] == "上班·正常":
+                    in_time = d(className="android.widget.TextView", resourceId="com.tencent.wework:id/mp").info['text']
+                    print("打卡时间：", in_time)
+                    msg = "上班打卡成功: 时间：" + in_time + " 日志时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                else:
+                    msg = "打卡失败:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             else:
-                msg = "打卡失败:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                d(resourceId="com.tencent.wework:id/ar0").click()
+                time.sleep(2)
+
+                if d(text=u"下班·正常").info['text'] == "下班·正常":
+                    in_time = d(className="android.widget.TextView", resourceId="com.tencent.wework:id/mp").info['text']
+                    msg = "下班打卡成功: 时间：" + in_time + " 日志时间：" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                else:
+                    msg = "打卡失败:" + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     # 按返回键
-    os.popen("adb shell input keyevent 4")
+    os.popen("/usr/local/bin/adb shell input keyevent 4")
     time.sleep(2)
 
     # 返回桌面
-    os.popen("adb shell input keyevent 3")
+    os.popen("/usr/local/bin/adb shell input keyevent 3")
     time.sleep(1)
 
     # 锁屏
-    os.popen("adb shell input keyevent 26")
+    os.popen("/usr/local/bin/adb shell input keyevent 26")
 
     return msg
 
@@ -84,7 +86,7 @@ def send_message(msg, is_morning):
 
 
 def get_random_minute():
-    return int(random.random() * 15)
+    return int(random.random() * 1)
 
 
 def get_holiday_or_except(year):
@@ -104,6 +106,9 @@ def get_holiday_or_except(year):
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG, filename='/Users/liwd/wework.txt',
+                        format='%(asctime)s - %(levelname)s - %(message)s')
+
     now = datetime.datetime.now()
     today = now.strftime('%Y-%m-%d')
     weekday = now.weekday()
@@ -111,11 +116,12 @@ def main():
 
     get_holiday_or_except(now.year)
     holiday, need_work = get_holiday_or_except(now.year)
+    logging.debug('start job')
 
-    #
-    # # 随机sleep
-    # time.sleep(get_random_minute() * 60)
+    # 随机sleep
+    time.sleep(get_random_minute() * 60)
 
+    logging.debug('open screen')
     # 打开屏幕，开始处理
     init()
 
@@ -133,11 +139,21 @@ def main():
 
 
 if __name__ == '__main__':
-    schedule.every().day.at("08:10").do(main)
-    schedule.every().sunday.monday.wednesday.friday.saturday.at("18:10").do(main)
-    schedule.every().thursday.tuesday.at("21:10").do(main)
-
     while True:
-        schedule.run_pending()
-        time.sleep(3)
+        now = datetime.datetime.now().strftime('%H:%M:%S')
+        weekday = datetime.datetime.now().strftime('%w')
+
+        if now == '08:10:00':
+            # 早上打卡
+            main()
+        elif now == '18:10:00':
+            if weekday == '2' or weekday == '4':
+                continue
+            main()
+        elif now == '21:10:00':
+            if weekday == '2' or weekday == '4':
+                # 打卡
+                main()
+
+        time.sleep(1)
 
